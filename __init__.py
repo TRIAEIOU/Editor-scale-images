@@ -39,6 +39,15 @@ def on_init(editor: Editor):
                 evt.target.style.minWidth = null;
                 evt.target.style.maxWidth = null;
                 esi_scale_div.appendChild(evt.target);
+                esi_scale_field = esi_scale_div.getRootNode().querySelector('anki-editable');
+                esi_caret_color = esi_scale_field.style.caretColor;
+                esi_scale_field.style.caretColor = 'transparent';
+                let rng = document.createRange();
+                let sel = window.getSelection();
+                rng.setStart(esi_scale_div.nextSibling ? esi_scale_div.nextSibling : esi_scale_div, 0);
+                rng.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(rng);
             }}
         }}
 
@@ -51,14 +60,16 @@ def on_init(editor: Editor):
                 esi_scale_div.firstChild.style.width = `${{esi_scale_div.clientWidth}}px`;
                 esi_scale_div.firstChild.style.minWidth = `${{esi_scale_div.clientWidth}}px`;
                 esi_scale_div.firstChild.style.maxWidth = `${{esi_scale_div.clientWidth}}px`;
+                esi_scale_field.style.caretColor = esi_caret_color;
                 esi_scale_div.replaceWith(esi_scale_div.firstChild);
+                esi_scale_field = null;
                 esi_scale_div = null;
             }}
         }}
         /* Addon Editor scale images - end */
         """
     editor.web.eval(js)
-on_init.border = "1px dashed black" # function attribute as static var
+on_init.border = "2px solid #99D1FF" # function attribute as static var
 
 ###########################################################################
 # On note load add event handlers to each field shadow root, the handlers
@@ -80,7 +91,9 @@ def on_load(js: str, note: Note, editor: Editor):
                 fields[i].shadowRoot.addEventListener("keydown", esi_deselect);
                 fields[i].shadowRoot.addEventListener("mousedown", esi_deselect);
             }
+            var esi_scale_field = null;
             var esi_scale_div = null;
+            var esi_caret_color = 'auto';
         }
         /* Addon Editor scale images - end */
     """
