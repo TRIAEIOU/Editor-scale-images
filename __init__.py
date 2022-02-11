@@ -27,10 +27,16 @@ def on_init(editor: Editor):
         /* Addon Editor scale images - begin */
         function esi_select(evt) {{
             if(evt.target.nodeName === "IMG") {{
-                esi_scale_div = document.createElement("div");
-                esi_scale_div.className = "esi_scale_div";
-                esi_scale_div.style.cssText = `cursor: crosshair; border: {on_init.border}; overflow: hidden; resize: horizontal; display: inline-block; width: ${{evt.target.width}}px;`;
-                evt.target.parentNode.insertBefore(esi_scale_div, evt.target);
+                esi = {{
+                    div: document.createElement("div"),
+                    field: null,
+                    fieldcc: 'auto',
+                    width: evt.target.width,
+                    style: evt.target.style
+                }}
+                esi['div'].className = "esi_scale_div";
+                esi['div'].style.cssText = `cursor: crosshair; border: {on_init.border}; overflow: hidden; resize: horizontal; display: inline-block; width: ${{evt.target.width}}px;`;
+                evt.target.parentNode.insertBefore(esi['div'], evt.target);
                 evt.target.style.display = "block";
                 evt.target.style.pointerEvents = "none";
                 evt.target.style.objectFit = "contain";
@@ -38,13 +44,13 @@ def on_init(editor: Editor):
                 evt.target.style.width = "100%";
                 evt.target.style.minWidth = null;
                 evt.target.style.maxWidth = null;
-                esi_scale_div.appendChild(evt.target);
-                esi_scale_field = esi_scale_div.getRootNode().querySelector('anki-editable');
-                esi_caret_color = esi_scale_field.style.caretColor;
-                esi_scale_field.style.caretColor = 'transparent';
+                esi['div'].appendChild(evt.target);
+                esi['field'] = esi['div'].getRootNode().querySelector('anki-editable');
+                esi['fieldcc'] = esi['field'].style.caretColor;
+                esi['field'].style.caretColor = 'transparent';
                 let rng = document.createRange();
                 let sel = window.getSelection();
-                rng.setStart(esi_scale_div.nextSibling ? esi_scale_div.nextSibling : esi_scale_div, 0);
+                rng.setStart(esi['div'].nextSibling ? esi['div'].nextSibling : esi['div'], 0);
                 rng.collapse(true);
                 sel.removeAllRanges();
                 sel.addRange(rng);
@@ -52,18 +58,32 @@ def on_init(editor: Editor):
         }}
 
         function esi_deselect(evt) {{
-            if(esi_scale_div && (esi_scale_div != evt.target || evt.type == "keydown")) {{
-                esi_scale_div.firstChild.style.display = "inline-block";
-                esi_scale_div.firstChild.style.pointerEvents = "auto";
-                esi_scale_div.firstChild.style.objectFit = "contain";
-                esi_scale_div.firstChild.style.height = "auto";
-                esi_scale_div.firstChild.style.width = `${{esi_scale_div.clientWidth}}px`;
-                esi_scale_div.firstChild.style.minWidth = `${{esi_scale_div.clientWidth}}px`;
-                esi_scale_div.firstChild.style.maxWidth = `${{esi_scale_div.clientWidth}}px`;
-                esi_scale_field.style.caretColor = esi_caret_color;
-                esi_scale_div.replaceWith(esi_scale_div.firstChild);
-                esi_scale_field = null;
-                esi_scale_div = null;
+            if(esi && (esi['div'] != evt.target || evt.type == "keydown")) {{
+                esi['div'].firstChild.style = esi['style'];
+                if(esi['width'] != esi['div'].clientWidth) {{
+                    esi['div'].firstChild.style.width = "contain";
+                    esi['div'].firstChild.style.height = "auto";
+                    esi['div'].firstChild.style.width = `${{esi['div'].clientWidth}}px`;
+                    esi['div'].firstChild.style.minWidth = `${{esi['div'].clientWidth}}px`;
+                    esi['div'].firstChild.style.maxWidth = `${{esi['div'].clientWidth}}px`;
+                }}
+                esi['field'].style.caretColor = esi['fieldcc'];
+                esi['div'].replaceWith(esi['div'].firstChild);
+                esi = null;
+            }}
+        }}
+
+        function esi_reset(evt) {{
+            if(esi && esi['div'] === evt.target) {{
+                esi['div'].firstChild.style.pointerEvents = "auto";
+                esi['div'].firstChild.style.height = "auto";
+                esi['div'].firstChild.style.width = null;
+                esi['div'].firstChild.style.minWidth = null;
+                esi['div'].firstChild.style.maxWidth = null;
+                esi['field'].style.caretColor = esi['fieldcc'];
+                esi['div'].replaceWith(esi['div'].firstChild);
+                window.getSelection().removeAllRanges();
+                esi = null;
             }}
         }}
         /* Addon Editor scale images - end */
@@ -79,22 +99,21 @@ on_init.border = "2px solid #99D1FF" # function attribute as static var
 # mousedown leads to deselect any old (unless new == old to capture resize
 # mousedown), so does keydown => unable to edit but can scroll with mouse
 # etc. while selected. click (i.e. on mouse up) selects any img.
-# esi_scale_div contains currently selected (wrapping) div or null.
+# esi['div'] contains currently selected (wrapping) div or null.
 ###########################################################################
 def on_load(js: str, note: Note, editor: Editor):
     js+= """
         /* Addon Editor scale images - begin */
-        if(typeof esi_scale_div  === 'undefined') {
+        if(typeof esi === 'undefined') {{
             let fields = document.getElementsByClassName("field");
-            for(let i = 0; i < fields.length; i++) {
+            for(let i = 0; i < fields.length; i++) {{
                 fields[i].shadowRoot.addEventListener("click", esi_select);
+                fields[i].shadowRoot.addEventListener("dblclick", esi_reset);
                 fields[i].shadowRoot.addEventListener("keydown", esi_deselect);
                 fields[i].shadowRoot.addEventListener("mousedown", esi_deselect);
-            }
-            var esi_scale_field = null;
-            var esi_scale_div = null;
-            var esi_caret_color = 'auto';
-        }
+            }}
+            var esi = null;
+        }}
         /* Addon Editor scale images - end */
     """
     return js

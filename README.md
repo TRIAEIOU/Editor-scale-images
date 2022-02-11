@@ -14,6 +14,7 @@ Arthur Milchiors addon is much more configurable, ESI aims to be as simple as po
 1. Click on the image to resize, it will become "selected" (surrounded by a configurable style border).
 2. Resize by dragging the lower right corner (cursor will be crosshair over image but arrow over the dragging corner).
 3. Continue to edit the note (img will be deselected as soon as you start typing or click somewhere else, no need to actively deselect. Note: "Escape" will close the Add note/Browser window, and AFAIK the Escape key press never reaches the JS).
+4. Double clicking an image will remove any scaling that has been set.
 
 ## Configuration
 - Set the highlight border style in the addon configuration (CSS "border" property, eg. `5px solid red` will result in a solid red border, 5px wide). Default: `2px solid #99D1FF`.
@@ -26,3 +27,6 @@ Arthur Milchiors addon is much more configurable, ESI aims to be as simple as po
 - It seems the Anki browser window intercepts escape key press and closes the browser window before it reaches the editor. It would have been more intuitive if escape deselected a selected image however the current design choice is to refrain from messing with the browser code. Similarly the Delete and Backspace key presses never seem to reach the JS, otherwise it would have been more intuitive to have those delete the selected image.
 - Anki 2.1.50 (or more specifically Qt6 QWebEngine) will give some more implementation options as the Qt6 QWebEngine should implement the CSS aspect-ratio property (not implemented in Qt5 QWebEngine).
 - Untested on MacOS/iOS Anki due to lack of testing platforms but it should be OK as ESI doesn't use any edge case HTML/JS functionality.
+
+## Changelog
+- 2022-02-11: Made click-and-then-unclick an image not change it's current scaling (previously the dimensions were fixed to that size), i.e when clicking and unclicking an unscaled image it will now not have it's size fixed to that scale. Added double click functionality to clear previous scaling (making the image scale/react to container size). If you have images that have been "fixed in size" by previous version you can run a find and replace (regex) such as `(<img\s[^>]+?)\s+style="[^"]+"([^>]*>)` and replace with `$1$2` _on the relevant notes_ (if you run it on all notes you will undo all scaling you have done with the addon, backup your notes before trying).
